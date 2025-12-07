@@ -1,0 +1,75 @@
+pipeline {
+    agent any
+    
+    environment {
+        DOCKER_IMAGE = "calculator-app"
+        DOCKER_TAG = "pr-${BUILD_NUMBER}"
+        APP_PORT = "3001"
+        CONTAINER_NAME = "calc-pr-${BUILD_NUMBER}"
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                echo "Stage 1: Checkout"
+                checkout scm
+            }
+        }
+        
+        stage('Setup') {
+            steps {
+                echo "Stage 2: Setup"
+                sh 'docker rm -f ${CONTAINER_NAME} 2>/dev/null || true'
+            }
+        }
+        
+        stage('Build') {
+            steps {
+                echo "Stage 3: Build"
+                sh 'docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .'
+            }
+        }
+        
+        stage('Run') {
+            steps {
+                echo "Stage 4: Run"
+                sh '''
+                    docker run -d --name ${CONTAINER_NAME} -p ${APP_PORT}:80 ${DOCKER_IMAGE}:${DOCKER_TAG}
+                    sleep 5
+                '''
+            }
+        }
+        
+        stage('Smoke Test') {
+            steps {
+                echo "Stage 5: Test"
+                sh 'APP_URL=http://localhost:${APP_PORT} ./smoke-test.sh'
+            }
+        }
+        
+        stage('Archive') {
+            steps {
+                echo "Stage 6: Archive"
+                sh '''
+                    mkdir -p artifacts
+                    docker logs ${CONTAINER_NAME} > artifacts/logs.txt 2>&1
+                '''
+                archiveArtifacts artifacts: 'artifacts/**/*'
+            }
+        }
+        
+        stage('Cleanup') {
+            steps {
+                echo "Stage 7: Cleanup"
+                sh 'docker stop ${CONTAINER_NAME} && docker rm ${CONTAINER_NAME}'
+            }
+        }
+    }
+    
+    post {
+        always {
+            sh 'docker stop ${CONTAINER_NAME} 2>/dev/null || true'
+            sh 'docker rm ${CONTAINER_NAME} 2>/dev/null || true'
+        }
+    }
+}
