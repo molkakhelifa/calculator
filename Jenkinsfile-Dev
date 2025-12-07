@@ -42,7 +42,8 @@ pipeline {
         
         stage('Smoke Test') {
             steps {
-                echo "Stage 5: Test"
+                echo "Stage 5: Smoke Test"
+                sh 'chmod +x ./smoke-test.sh'
                 sh 'APP_URL=http://localhost:${APP_PORT} ./smoke-test.sh'
             }
         }
@@ -69,6 +70,7 @@ pipeline {
     post {
         always {
             sh 'docker stop ${CONTAINER_NAME} 2>/dev/null || true'
+            sh 'docker rm ${CONTAINER_NAME} 2>/dev/null || true'
         }
     }
 }

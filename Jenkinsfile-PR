@@ -42,7 +42,8 @@ pipeline {
         
         stage('Smoke Test') {
             steps {
-                echo "Stage 5: Test"
+                echo "Stage 5: Smoke Test"
+                sh 'chmod +x ./smoke-test.sh'
                 sh 'APP_URL=http://localhost:${APP_PORT} ./smoke-test.sh'
             }
         }
