@@ -12,7 +12,9 @@ pipeline {
             steps {
                 checkout scm
                 script {
-                    // Récupère le dernier tag Git
+                    // Récupérer tous les tags pour que git describe fonctionne
+                    sh 'git fetch --tags'
+                    // Récupérer le dernier tag Git
                     env.VERSION = sh(script: "git describe --tags --abbrev=0", returnStdout: true).trim()
                 }
                 echo "Stage 1: Checkout version ${env.VERSION}"
@@ -66,7 +68,8 @@ pipeline {
         stage('Cleanup') {
             steps {
                 echo "Stage 7: Cleanup"
-                sh 'docker stop ${CONTAINER_NAME} && docker rm ${CONTAINER_NAME}'
+                sh 'docker stop ${CONTAINER_NAME} 2>/dev/null || true'
+                sh 'docker rm ${CONTAINER_NAME} 2>/dev/null || true'
             }
         }
     }
@@ -78,4 +81,3 @@ pipeline {
         }
     }
 }
-""
