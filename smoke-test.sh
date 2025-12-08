@@ -2,7 +2,8 @@
 
 set -e
 
-APP_URL="${APP_URL:-http://localhost:3000}"
+# Utiliser l'URL passée par Jenkins, sinon fallback sur localhost:3003
+APP_URL="${APP_URL:-http://localhost:3003}"
 MAX_RETRIES=30
 RETRY_DELAY=2
 
@@ -91,8 +92,10 @@ test_healthcheck() {
 
 FAILED_TESTS=0
 
+# Attendre que l'application démarre
 wait_for_app || exit 1
 
+# Exécuter tous les tests
 test_app_responds || FAILED_TESTS=$((FAILED_TESTS + 1))
 test_html_content || FAILED_TESTS=$((FAILED_TESTS + 1))
 test_static_resources || FAILED_TESTS=$((FAILED_TESTS + 1))
