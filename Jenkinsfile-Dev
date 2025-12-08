@@ -8,6 +8,7 @@ pipeline {
     }
 
     stages {
+
         stage('Checkout') {
             steps {
                 echo "Stage 1: Checkout"
@@ -45,36 +46,26 @@ pipeline {
                 echo "Stage 5: Smoke Test"
                 sh """
                     docker ps | grep ${CONTAINER_NAME}
-                    echo "✅ Container is running"
 
-                    # Get container internal IP
-                    CONTAINER_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${CONTAINER_NAME})
-                    echo "Container IP: \$CONTAINER_IP"
+                    echo "Checking app response..."
 
-                    # Correct smoke test: use 0.0.0.0 instead of localhost
+                    # Escape dollar signs inside Groovy multiline string
+                    CONTAINER_IP=\$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${CONTAINER_NAME})
+                    echo "Container IP: \${CONTAINER_IP}"
+
                     if docker exec ${CONTAINER_NAME} wget -q -O- http://0.0.0.0:80 >/dev/null; then
-                        echo "✅ Application is responding"
+                        echo "APP OK"
                     else
-                        echo "❌ Application not responding"
+                        echo "APP NOT RESPONDING"
                         exit 1
                     fi
                 """
-            }
-        }
-
-        stage('Archive') {
-            when {
-                expression { currentBuild.currentResult == "SUCCESS" }
-            }
-            steps {
-                echo "Stage 6: Archive"
             }
         }
     }
 
     post {
         always {
-            echo "Cleaning up..."
             sh "docker stop ${CONTAINER_NAME} || true"
             sh "docker rm ${CONTAINER_NAME} || true"
         }
