@@ -2,9 +2,8 @@ pipeline {
     agent any
     
     environment {
-        TAG_NAME = "v1.0.0"           // <-- Déclare ici le tag que tu veux tester
         DOCKER_IMAGE = "calculator-app"
-        VERSION = "${TAG_NAME}"
+        VERSION = "v1.0.0" // <- Remplace ce tag selon ce que tu veux build
         APP_PORT = "3003"
         CONTAINER_NAME = "calc-release"
     }
@@ -12,8 +11,8 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                echo "Stage 1: Checkout ${VERSION}"
                 checkout scm
+                echo "Stage 1: Checkout ${VERSION}"
             }
         }
         
