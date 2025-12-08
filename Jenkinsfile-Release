@@ -10,12 +10,19 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                checkout scm
+                // Forcer la branche master
+                checkout([$class: 'GitSCM',
+                    branches: [[name: 'refs/heads/master']],
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/molkakhelifa/calculator.git',
+                        credentialsId: 'github-creds'
+                    ]]
+                ])
                 script {
-                    // Récupérer tous les tags pour que git describe fonctionne
+                    // Récupérer tous les tags
                     sh 'git fetch --tags'
-                    // Récupérer le dernier tag Git
-                    env.VERSION = sh(script: "git describe --tags --abbrev=0", returnStdout: true).trim()
+                    // Récupérer le dernier tag Git, fallback sur master si aucun tag
+                    env.VERSION = sh(script: "git describe --tags --abbrev=0 || echo 'master'", returnStdout: true).trim()
                 }
                 echo "Stage 1: Checkout version ${env.VERSION}"
             }
