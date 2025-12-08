@@ -44,23 +44,30 @@ pipeline {
             steps {
                 echo "Stage 5: Smoke Test"
                 sh '''
-                    echo "Checking if container is running..."
-                    docker ps | grep ${CONTAINER_NAME}
-                    
-                    echo "Getting container IP..."
-                    CONTAINER_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${CONTAINER_NAME})
-                    echo "Container IP: $CONTAINER_IP"
-                    
-                    echo "Testing application inside container..."
-                    if docker exec ${CONTAINER_NAME} wget -q -O- http://localhost:80 | grep -q "html"; then
-                        echo "SUCCESS: Application is serving HTML"
+                    # Vérifier que le container tourne
+                    if docker ps | grep ${CONTAINER_NAME}; then
+                        echo "✅ Container is running"
                     else
-                        echo "FAILED: Application not responding"
-                        docker logs ${CONTAINER_NAME}
+                        echo "❌ Container not running"
                         exit 1
                     fi
                     
-                    echo "All smoke tests PASSED"
+                    # Vérifier les logs
+                    docker logs ${CONTAINER_NAME}
+                    
+                    # Tester avec l'IP du container
+                    CONTAINER_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${CONTAINER_NAME})
+                    echo "Container IP: $CONTAINER_IP"
+                    
+                    # Test simple avec curl
+                    if docker exec ${CONTAINER_NAME} wget -q -O- http://localhost:80 | grep -q "html"; then
+                        echo "✅ Application is serving HTML"
+                    else
+                        echo "❌ Application not responding"
+                        exit 1
+                    fi
+                    
+                    echo "✅ All smoke tests PASSED"
                 '''
             }
         }
@@ -71,8 +78,7 @@ pipeline {
                 sh '''
                     mkdir -p artifacts
                     docker logs ${CONTAINER_NAME} > artifacts/logs.txt 2>&1
-                    docker inspect ${DOCKER_IMAGE}:${DOCKER_TAG} > artifacts/image.json
-                    echo "Build ${BUILD_NUMBER} - SUCCESS" > artifacts/status.txt
+                    echo "Build SUCCESS" > artifacts/status.txt
                 '''
                 archiveArtifacts artifacts: 'artifacts/**/*'
             }
